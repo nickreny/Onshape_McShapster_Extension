@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Onshape Part Studio Merger</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <h1>Onshape Part Studio Merger</h1>
+  <p class="sub">RM tool — combines several single-part Part Studios (e.g. McMaster imports) into one.</p>
+
+  <section>
+    <label>Document URL</label>
+    <input id="docUrl" type="text" placeholder="https://cad.onshape.com/documents/.../w/.../e/...">
+    <button id="loadBtn">Load Part Studios</button>
+  </section>
+
+  <section id="studiosSection" hidden>
+    <label>Select the Part Studios to merge</label>
+    <div id="studioList"></div>
+
+    <label>Name for the merged Part Studio</label>
+    <input id="outputName" type="text" placeholder="e.g. Hardware Kit - Bracket Assembly">
+
+    <label class="checkbox-row">
+      <input id="deleteOriginals" type="checkbox" checked>
+      Delete the original single-part Part Studios after a successful merge
+    </label>
+
+    <button id="mergeBtn">Merge</button>
+  </section>
+
+  <section>
+    <label>Log</label>
+    <pre id="log"></pre>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
