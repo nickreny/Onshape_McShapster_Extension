@@ -7,14 +7,14 @@ from onshape_client import OnshapeClient, OnshapeError, grid_transform
 
 app = Flask(__name__)
 
-ACCESS_KEY = os.environ.get("ONSHAPE_ACCESS_KEY")
-SECRET_KEY = os.environ.get("ONSHAPE_SECRET_KEY")
+ACCESS_KEY = os.environ.get("ACCESS_KEY_ONSHAPE")
+SECRET_KEY = os.environ.get("SECRET_KEY_ONSHAPE")
 
 
 def get_client() -> OnshapeClient:
     if not ACCESS_KEY or not SECRET_KEY:
         raise OnshapeError(
-            "Set ONSHAPE_ACCESS_KEY and ONSHAPE_SECRET_KEY environment variables "
+            "Set ACCESS_KEY_ONSHAPE and SECRET_KEY_ONSHAPE environment variables "
             "before starting the app (see README)."
         )
     return OnshapeClient(ACCESS_KEY, SECRET_KEY)

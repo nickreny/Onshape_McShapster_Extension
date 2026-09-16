@@ -16,7 +16,7 @@ repo and run it in a Codespace instead — everything happens in the browser.
    automatically (see `.devcontainer/devcontainer.json`).
 3. Add your API key as a secret so you don't have to paste it every session:
    GitHub → your avatar → **Settings** → **Codespaces** → **Secrets** →
-   **New secret**. Add `ONSHAPE_ACCESS_KEY` and `ONSHAPE_SECRET_KEY`, and
+   **New secret**. Add `ACCESS_KEY_ONSHAPE` and `SECRET_KEY_ONSHAPE`, and
    allow them for this repository. Then **rebuild/reopen** the Codespace so
    it picks them up (or just start a fresh one).
 4. In the Codespace's terminal (already open in the browser), run:
@@ -50,10 +50,10 @@ No local Python, no local install, nothing on this laptop.
 
 3. **Set your API key as environment variables** (don't hardcode them in a file):
    ```bash
-   export ONSHAPE_ACCESS_KEY="your_access_key"
-   export ONSHAPE_SECRET_KEY="your_secret_key"
+   export ACCESS_KEY_ONSHAPE="your_access_key"
+   export SECRET_KEY_ONSHAPE="your_secret_key"
    ```
-   On Windows (PowerShell): `$env:ONSHAPE_ACCESS_KEY="..."`
+   On Windows (PowerShell): `$env:ACCESS_KEY_ONSHAPE="..."`
 
 4. **Run it:**
    ```bash
@@ -106,10 +106,6 @@ but if the property really isn't called "Name" on your account for some
 reason, the code raises a clear error listing the actual property names it
 found, rather than failing silently. If you see that error, paste it back
 to me and it's a one-line fix.
-
-Everything else (list elements, create assembly, insert instance, export
-translation, import translation, delete element) is based on Onshape's
-published docs and forum-confirmed working examples.
 
 ## Scope note
 
