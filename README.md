@@ -96,15 +96,16 @@ No local Python, no local install, nothing on this laptop.
    Studio -- both the ones just created from your uploads and any
    pre-existing loose ones you checked.
 
-## One thing to double-check before you trust it on real work
+## One thing that's still worth watching on your first real run
 
-`rename_element` in `onshape_client.py` is the one call in here I'm least
-certain about — Onshape's endpoint for renaming an element isn't as
-prominently documented as the others. Before running this on anything you
-care about, open Onshape's live API explorer at
-https://cad.onshape.com/glassworks/explorer, find the element-rename call,
-and confirm the path/method match what's in the code. If it's different,
-it's a one-line fix in `onshape_client.py`.
+`rename_element` now uses Onshape's documented Metadata API (GET the
+element's metadata to find the "Name" property's id, then POST a new
+value for it) instead of a guessed endpoint. This is based on real,
+published Onshape docs and a forum-confirmed example, so it should work --
+but if the property really isn't called "Name" on your account for some
+reason, the code raises a clear error listing the actual property names it
+found, rather than failing silently. If you see that error, paste it back
+to me and it's a one-line fix.
 
 Everything else (list elements, create assembly, insert instance, export
 translation, import translation, delete element) is based on Onshape's

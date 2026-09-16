@@ -15,11 +15,11 @@ personal, non-OAuth credential meant for exactly this kind of private script.
 
 NOTE ON VERSION DRIFT: Onshape's API is versioned in the URL (v6, v9, v10...)
 and endpoints occasionally move. Every endpoint below is based on Onshape's
-published API docs / forum-confirmed examples as of this writing. Before
-your first real run, sanity-check `rename_element` in particular using the
-live interactive explorer at https://cad.onshape.com/glassworks/explorer --
-it's the one call in this file I'd verify by hand first, since Onshape does
-not publish it as prominently as the others.
+published API docs / forum-confirmed examples as of this writing.
+rename_element uses the documented Metadata API (a GET to find the "Name"
+property's id, then a POST to set it) rather than a guessed endpoint -- if
+the property lookup ever fails, it raises a clear error listing the actual
+property names found, instead of failing silently.
 """
 
 import io
@@ -76,11 +76,33 @@ class OnshapeClient:
         self._request("DELETE", f"/api/v10/elements/d/{did}/w/{wid}/e/{eid}")
 
     def rename_element(self, did: str, wid: str, eid: str, name: str):
-        # VERIFY THIS ONE against the Glassworks explorer before relying on it.
+        """Rename an element via Onshape's Metadata API.
+
+        This is a two-step dance: fetch the element's current metadata to
+        find the Name property's id and href, then POST a new value for
+        just that property. There's no simpler one-shot rename endpoint.
+        """
+        meta = self._request("GET", f"/api/v10/metadata/d/{did}/w/{wid}/e/{eid}").json()
+        name_prop = next(
+            (p for p in meta["properties"] if str(p.get("name", "")).lower() == "name"),
+            None,
+        )
+        if name_prop is None:
+            available = [p.get("name") for p in meta["properties"]]
+            raise OnshapeError(
+                f"Couldn't find a 'Name' property to rename via the metadata API. "
+                f"Available property names on this element: {available}. "
+                f"Check https://cad.onshape.com/glassworks/explorer for the right one."
+            )
         self._request(
             "POST",
-            f"/api/v10/elements/d/{did}/w/{wid}/e/{eid}",
-            json={"name": name},
+            f"/api/v10/metadata/d/{did}/w/{wid}/e/{eid}",
+            json={
+                "items": [{
+                    "href": meta["href"],
+                    "properties": [{"propertyId": name_prop["propertyId"], "value": name}],
+                }]
+            },
         )
 
     # ------------------------------------------------------------ assembly
