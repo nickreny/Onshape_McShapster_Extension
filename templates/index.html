@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Onshape Part Studio Cleaner</title>
+<title>Onshape McMaster Assembler</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <main>
-  <h1>Onshape Part Studio Cleaner</h1>
-  <p class="sub">RM tool — turns messy multi-body McMaster imports into clean single-body Part Studios.</p>
+  <h1>Onshape McMaster Assembler</h1>
+  <p class="sub">RM tool — turns messy multi-body McMaster imports into a single grouped rigid assembly.</p>
 
   <section>
     <label>Document URL</label>
@@ -19,17 +19,17 @@
   <section id="studiosSection" hidden>
     <label>McMaster STEP files (from your downloads folder)</label>
     <input id="stepFiles" type="file" accept=".step,.stp" multiple>
-    <p class="hint">Each file becomes its own clean, single-body Part Studio, named after the file. Nothing gets merged together across different parts.</p>
+    <p class="hint">Each file becomes its own assembly, with all its bodies grouped into one rigid unit and named after the file. Nothing gets merged together across different parts.</p>
 
     <label>Existing messy multi-body Part Studios already in this document (optional)</label>
     <div id="studioList"></div>
 
     <label class="checkbox-row">
       <input id="deleteOriginals" type="checkbox" checked>
-      Delete the original messy multi-body Part Studios after cleanup
+      Delete the original messy multi-body Part Studios afterward
     </label>
 
-    <button id="mergeBtn">Clean Up</button>
+    <button id="mergeBtn">Assemble &amp; Group</button>
   </section>
 
   <section>

@@ -44,7 +44,7 @@ document.getElementById("mergeBtn").addEventListener("click", async () => {
     return;
   }
 
-  log(`Cleaning up ${files.length} uploaded file(s) + ${checked.length} existing part studio(s)...`);
+  log(`Assembling ${files.length} uploaded file(s) + ${checked.length} existing part studio(s)...`);
 
   const form = new FormData();
   form.append("documentId", currentDoc.documentId);
@@ -57,8 +57,8 @@ document.getElementById("mergeBtn").addEventListener("click", async () => {
     const resp = await fetch("/api/merge", { method: "POST", body: form });
     const data = await resp.json();
     (data.log || []).forEach(log);
-    if (!resp.ok) throw new Error(data.error || "Cleanup failed");
-    log("Success. Reload the Onshape document and drag the clean tabs into your folder.");
+    if (!resp.ok) throw new Error(data.error || "Assembly failed");
+    log("Success. Reload the Onshape document to see the new grouped assemblies.");
   } catch (err) {
     log("ERROR: " + err.message);
   }

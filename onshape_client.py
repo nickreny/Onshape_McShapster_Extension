@@ -1,13 +1,16 @@
 """
-Thin wrapper around the Onshape REST API for cleaning up messy multi-body
-McMaster STEP imports, one item at a time:
+Thin wrapper around the Onshape REST API for turning messy multi-body
+McMaster STEP imports into usable rigid assemblies, one item at a time:
 
-  1. list Part Studios in a document
-  2. for each source item: create a scratch Assembly, insert its parts
-  3. export that Assembly as STEP
-  4. re-import as a single composite body (createComposite=true)
-  5. rename the result to match the original
-  6. delete the scratch Assembly and the original messy Part Studio
+  1. import the STEP file -- lands as one Part Studio with several loose
+     bodies (McMaster's file itself, not a code issue)
+  2. create an assembly and insert that Part Studio's parts into it
+  3. add a Group feature covering every inserted occurrence, locking them
+     at their current relative positions as one rigid unit (this is the
+     same feature Onshape creates for a manual Group -- built from the
+     real JSON Onshape generated for one, not guessed from docs)
+  4. rename the assembly to the part name
+  5. delete the original messy Part Studio
 
 Auth: Onshape API keys (access key / secret key), sent as HTTP Basic auth.
 Generate a key pair at https://dev-portal.onshape.com/keys -- this is a
@@ -76,7 +79,9 @@ class OnshapeClient:
         self._request("DELETE", f"/api/v10/elements/d/{did}/w/{wid}/e/{eid}")
 
     def rename_element(self, did: str, wid: str, eid: str, name: str):
-        """Rename an element via Onshape's Metadata API.
+        """Rename an element via Onshape's Metadata API. Not currently
+        called by app.py (create_assembly already names the assembly at
+        creation time), but kept here since it's independently useful.
 
         This is a two-step dance: fetch the element's current metadata to
         find the Name property's id and href, then POST a new value for
@@ -138,6 +143,42 @@ class OnshapeClient:
             json=body,
         )
 
+    def get_assembly_instances(self, did: str, wid: str, eid: str) -> list:
+        """Return the top-level instances (occurrences) currently in an
+        assembly -- each dict includes an "id" usable as a Group feature's
+        occurrence path.
+        """
+        resp = self._request("GET", f"/api/v10/assemblies/d/{did}/w/{wid}/e/{eid}")
+        return resp.json().get("rootAssembly", {}).get("instances", [])
+
+    def add_group_feature(self, did: str, wid: str, assembly_eid: str, instance_ids: list, name: str = "Group 1"):
+        """Add a Group feature locking the given occurrences at their
+        current relative positions -- the same feature Onshape creates
+        when you manually select bodies and choose Group. Built from the
+        real JSON Onshape generated for a manual Group (BTMMateGroup-65 /
+        BTMIndividualOccurrenceQuery-626), not guessed from docs.
+        """
+        queries = [
+            {"btType": "BTMIndividualOccurrenceQuery-626", "path": [instance_id]}
+            for instance_id in instance_ids
+        ]
+        feature = {
+            "btType": "BTMMateGroup-65",
+            "featureType": "mateGroup",
+            "name": name,
+            "suppressed": False,
+            "parameters": [{
+                "btType": "BTMParameterQueryWithOccurrenceList-67",
+                "queries": queries,
+                "parameterId": "occurrencesQuery",
+            }],
+        }
+        self._request(
+            "POST",
+            f"/api/v10/assemblies/d/{did}/w/{wid}/e/{assembly_eid}/features",
+            json={"feature": feature},
+        )
+
     # --------------------------------------------------------- translations
 
     def _poll_translation(self, request_id: str, timeout_s: int = 180):
@@ -155,40 +196,16 @@ class OnshapeClient:
             delay = min(delay * 1.4, 8)
         raise OnshapeError("Translation timed out")
 
-    def export_assembly_step(self, did: str, wid: str, eid: str) -> bytes:
-        resp = self._request(
-            "POST",
-            f"/api/v10/assemblies/d/{did}/w/{wid}/e/{eid}/translations",
-            json={
-                "formatName": "STEP",
-                "storeInDocument": False,
-                "allowFaultyParts": True,
-            },
-        )
-        data = resp.json()
-        result = self._poll_translation(data["id"])
-        # DONE translations expose the resulting external data id(s) to download.
-        ext_id = result["resultExternalDataIds"][0]
-        dl = self._request("GET", f"/api/v10/documents/d/{did}/externaldata/{ext_id}")
-        return dl.content
-
-    def import_step(self, did: str, wid: str, filename: str, file_bytes: bytes, create_composite: bool = False) -> str:
-        """Upload a STEP file into a new Part Studio.
-
-        create_composite=False: plain import. A multi-body STEP file (e.g.
-        a McMaster item whose file contains several solids for its
-        sub-components) lands as one Part Studio with several loose Parts.
-
-        create_composite=True: fuses every body in the file into a single
-        composite Part -- this is the "make it one clean solid" step, used
-        on the export of a scratch assembly to collapse a messy multi-body
-        item into one usable part.
+    def import_step(self, did: str, wid: str, filename: str, file_bytes: bytes) -> str:
+        """Upload a STEP file into a new Part Studio (plain import -- a
+        multi-body McMaster file lands as one Part Studio with several
+        loose Parts, which is expected; the Group feature is what makes
+        it usable as one rigid unit afterward).
         """
         files = {"file": (filename, io.BytesIO(file_bytes), "application/step")}
         data = {
             "storeInDocument": "true",
             "flattenAssemblies": "true",
-            "createComposite": "true" if create_composite else "false",
             "allowFaultyParts": "true",
         }
         resp = self._request(

@@ -64,9 +64,8 @@ def api_merge():
         client = get_client()
 
         # Build a worklist: (source_eid, output_name). Each item is
-        # cleaned up INDEPENDENTLY into its own single-body composite
-        # Part Studio -- nothing gets merged across different McMaster
-        # part numbers.
+        # processed INDEPENDENTLY -- nothing gets merged across different
+        # McMaster part numbers.
         work_items = []
 
         if uploaded_files:
@@ -79,41 +78,39 @@ def api_merge():
             step("Uploaded file(s) imported as individual Part Studios.")
 
         if existing_eids:
-            # Look up current names so the cleaned result keeps the same name.
+            # Look up current names so the result keeps the same name.
             elements = {e["id"]: e["name"] for e in client.list_elements(did, wid)}
             for eid in existing_eids:
-                work_items.append((eid, elements.get(eid, "Cleaned Part")))
+                work_items.append((eid, elements.get(eid, "Assembled Part")))
 
         if not work_items:
             return jsonify({"log": log, "error": "Nothing to process -- upload file(s) and/or select existing part studios."}), 400
 
         results = []
         for source_eid, output_name in work_items:
-            step(f"--- Cleaning up '{output_name}' ---")
+            step(f"--- Assembling '{output_name}' ---")
 
-            step("Creating scratch assembly...")
-            assembly_eid = client.create_assembly(did, wid, "_clean_scratch")
+            step("Creating assembly...")
+            assembly_eid = client.create_assembly(did, wid, output_name)
             client.insert_part_studio(did, wid, assembly_eid, did, source_eid)
 
-            step("Exporting as STEP...")
-            step_bytes = client.export_assembly_step(did, wid, assembly_eid)
+            step("Looking up the inserted bodies...")
+            instances = client.get_assembly_instances(did, wid, assembly_eid)
+            instance_ids = [inst["id"] for inst in instances]
 
-            step("Re-importing as a single composite solid...")
-            new_eid = client.import_step(did, wid, f"{output_name}.step", step_bytes, create_composite=True)
-
-            step(f"Renaming to '{output_name}'...")
-            client.rename_element(did, wid, new_eid, output_name)
-
-            step("Cleaning up scratch assembly...")
-            client.delete_element(did, wid, assembly_eid)
+            if len(instance_ids) > 1:
+                step(f"Grouping {len(instance_ids)} bodies into one rigid unit...")
+                client.add_group_feature(did, wid, assembly_eid, instance_ids)
+            else:
+                step("Only one body -- no grouping needed.")
 
             if delete_originals:
                 step("Deleting the original messy multi-body Part Studio...")
                 client.delete_element(did, wid, source_eid)
 
-            results.append(new_eid)
+            results.append(assembly_eid)
 
-        step("Done. Each item is now its own clean single-body Part Studio -- drag them into your folder in Onshape.")
+        step("Done. Each item is now its own assembly with all bodies grouped into one rigid unit.")
         return jsonify({"log": log, "newElementIds": results})
 
     except Exception as exc:  # noqa: BLE001
