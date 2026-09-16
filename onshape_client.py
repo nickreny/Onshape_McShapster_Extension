@@ -150,12 +150,13 @@ class OnshapeClient:
         dl = self._request("GET", f"/api/v10/documents/d/{did}/externaldata/{ext_id}")
         return dl.content
 
-    def import_step_combined(self, did: str, wid: str, filename: str, file_bytes: bytes) -> str:
-        """Upload a STEP file and flatten it into ONE new Part Studio.
+    def import_step(self, did: str, wid: str, filename: str, file_bytes: bytes) -> str:
+        """Upload a STEP file into a new Part Studio.
 
-        flattenAssemblies=True is the part that reproduces the UI's
-        "combine into a single Part Studio" behavior: a multi-solid STEP
-        import naturally becomes one Part Studio with one Part per solid.
+        flattenAssemblies=True matters when this is fed the export of the
+        scratch assembly (multiple bodies -> one Part Studio, one Part per
+        solid). It's harmless when fed a plain single-part McMaster STEP
+        file too, so this one method covers both call sites.
         """
         files = {"file": (filename, io.BytesIO(file_bytes), "application/step")}
         data = {

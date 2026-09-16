@@ -8,4 +8,5 @@ button { margin-top: 10px; padding: 8px 16px; font-size: 14px; cursor: pointer; 
 #studioList { border: 1px solid #ddd; border-radius: 6px; padding: 8px; max-height: 220px; overflow-y: auto; }
 #studioList label { font-weight: normal; margin: 4px 0; display: flex; align-items: center; gap: 8px; }
 .checkbox-row { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+.hint { font-size: 12px; color: #777; margin: 4px 0 0; }
 pre#log { background: #111; color: #b6f2b6; padding: 12px; border-radius: 6px; min-height: 80px; white-space: pre-wrap; font-size: 12px; }

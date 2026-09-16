@@ -63,31 +63,38 @@ No local Python, no local install, nothing on this laptop.
 
 ## Using it
 
-1. Open your RM Onshape document, copy the URL from the address bar (it
+1. Download the STEP file(s) for your McMaster parts as usual (no change there).
+2. Open your RM Onshape document, copy the URL from the address bar (it
    should look like `.../documents/<id>/w/<id>/e/<id>`), paste it in and
    click "Load Part Studios."
-2. Check the boxes next to the loose single-part studios you want combined.
-3. Type the name you want the merged Part Studio to end up with.
-4. Leave "delete originals" checked if you only want to keep the merged
-   result (this is the default — matches what you asked for). Uncheck it
-   if you want to keep the source tabs around for a run or two while you
-   trust the tool.
-5. Click Merge. The log shows each step; when it says "Done," reload the
-   Onshape document tab list to see the new combined Part Studio.
+3. In the "McMaster STEP files" field, select the file(s) you just
+   downloaded. (Optional: also check any loose single-part studios already
+   sitting in the doc from a prior "Send to Onshape" import — both get
+   merged together in the same pass.)
+4. Type the name you want the merged Part Studio to end up with.
+5. Leave "delete originals" checked if you only want to keep the merged
+   result (this is the default). It deletes both the freshly-imported
+   per-file studios and any pre-existing loose studios you checked.
+6. Click "Import & Merge." The log shows each step; when it says "Done,"
+   reload the Onshape document tab list to see the new combined Part Studio.
 
 ## What it does under the hood
 
-1. Creates a scratch Assembly.
-2. Inserts each selected Part Studio's parts into it (offset along X so
-   bodies don't sit exactly on top of each other — this is cosmetic only,
+1. Uploads each selected STEP file straight into the document as its own
+   new Part Studio (this is the same thing Onshape's own import dialog
+   does with a single file).
+2. Creates a scratch Assembly.
+3. Inserts every source Part Studio's parts into it (offset along X so
+   bodies don't sit exactly on top of each other -- this is cosmetic only,
    since the goal is a parts library, not a positioned physical assembly).
-3. Exports that Assembly as STEP.
-4. Re-imports the STEP with `flattenAssemblies=true`, which reproduces the
-   Onshape import dialog's "combine into a single Part Studio" behavior —
+4. Exports that Assembly as STEP.
+5. Re-imports the STEP with `flattenAssemblies=true`, which reproduces the
+   Onshape import dialog's "combine into a single Part Studio" behavior --
    each solid becomes its own Part inside one new Part Studio.
-5. Renames the new Part Studio to whatever you typed.
-6. Deletes the scratch Assembly, and (if left checked) the original
-   single-part Part Studios.
+6. Renames the new Part Studio to whatever you typed.
+7. Deletes the scratch Assembly, and (if left checked) every source Part
+   Studio -- both the ones just created from your uploads and any
+   pre-existing loose ones you checked.
 
 ## One thing to double-check before you trust it on real work
 
@@ -105,7 +112,9 @@ published docs and forum-confirmed working examples.
 
 ## Scope note
 
-This only automates the Onshape side. It assumes the McMaster parts are
-already sitting in the document as individual Part Studios (however they
-got there — McMaster's "Send to Onshape" button or a manual STEP import).
-It doesn't touch McMaster's website.
+This automates the Onshape side, including turning your locally-downloaded
+McMaster STEP files into the merged Part Studio in one pass. It does not
+touch McMaster's website itself -- you still click "Download" there. That's
+intentional: automating McMaster's own site would mean scripting a browser
+against a page that isn't built to be scripted, which breaks silently
+whenever they change their layout and needs ongoing upkeep to keep working.

@@ -17,7 +17,11 @@
   </section>
 
   <section id="studiosSection" hidden>
-    <label>Select the Part Studios to merge</label>
+    <label>McMaster STEP files (from your downloads folder)</label>
+    <input id="stepFiles" type="file" accept=".step,.stp" multiple>
+    <p class="hint">Optional — drop in files you just downloaded from McMaster. They'll be imported and merged along with anything checked below.</p>
+
+    <label>Existing loose Part Studios already in this document (optional)</label>
     <div id="studioList"></div>
 
     <label>Name for the merged Part Studio</label>
@@ -28,7 +32,7 @@
       Delete the original single-part Part Studios after a successful merge
     </label>
 
-    <button id="mergeBtn">Merge</button>
+    <button id="mergeBtn">Import &amp; Merge</button>
   </section>
 
   <section>

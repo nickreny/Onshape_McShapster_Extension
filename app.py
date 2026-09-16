@@ -46,12 +46,16 @@ def api_part_studios():
 
 @app.route("/api/merge", methods=["POST"])
 def api_merge():
-    payload = request.json
-    did = payload["documentId"]
-    wid = payload["workspaceId"]
-    source_eids = payload["elementIds"]
-    output_name = payload["outputName"].strip()
-    delete_originals = bool(payload.get("deleteOriginals", True))
+    # multipart/form-data: regular fields come through request.form,
+    # uploaded files through request.files.
+    did = request.form["documentId"]
+    wid = request.form["workspaceId"]
+    output_name = request.form["outputName"].strip()
+    delete_originals = request.form.get("deleteOriginals", "true").lower() == "true"
+
+    # elementIds of studios the user checked that already existed in the doc
+    existing_eids = [e for e in request.form.getlist("elementIds") if e]
+    uploaded_files = request.files.getlist("files")
 
     log = []
 
@@ -60,6 +64,18 @@ def api_merge():
 
     try:
         client = get_client()
+        source_eids = list(existing_eids)
+
+        if uploaded_files:
+            step(f"Importing {len(uploaded_files)} McMaster STEP file(s)...")
+            for f in uploaded_files:
+                file_bytes = f.read()
+                new_eid = client.import_step(did, wid, f.filename, file_bytes)
+                source_eids.append(new_eid)
+            step("All uploaded files are now individual Part Studios.")
+
+        if len(source_eids) < 1:
+            return jsonify({"log": log, "error": "Nothing to merge -- upload file(s) and/or select existing part studios."}), 400
 
         step(f"Creating scratch assembly for {len(source_eids)} part studio(s)...")
         assembly_eid = client.create_assembly(did, wid, "_merge_scratch")
@@ -72,7 +88,7 @@ def api_merge():
         step_bytes = client.export_assembly_step(did, wid, assembly_eid)
 
         step("Re-importing STEP, flattened, into a new combined Part Studio...")
-        new_eid = client.import_step_combined(did, wid, f"{output_name}.step", step_bytes)
+        new_eid = client.import_step(did, wid, f"{output_name}.step", step_bytes)
 
         step(f"Renaming combined Part Studio to '{output_name}'...")
         client.rename_element(did, wid, new_eid, output_name)
@@ -81,7 +97,7 @@ def api_merge():
         client.delete_element(did, wid, assembly_eid)
 
         if delete_originals:
-            step("Deleting original single-part Part Studios...")
+            step("Deleting original single-part Part Studios (including freshly imported ones)...")
             for eid in source_eids:
                 client.delete_element(did, wid, eid)
 
