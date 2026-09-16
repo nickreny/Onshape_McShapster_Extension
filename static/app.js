@@ -37,21 +37,18 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
 document.getElementById("mergeBtn").addEventListener("click", async () => {
   const checked = [...document.querySelectorAll("#studioList input:checked")].map((c) => c.value);
   const files = document.getElementById("stepFiles").files;
-  const outputName = document.getElementById("outputName").value.trim();
   const deleteOriginals = document.getElementById("deleteOriginals").checked;
 
   if (checked.length < 1 && files.length < 1) {
     log("Upload at least one STEP file or select an existing part studio.");
     return;
   }
-  if (!outputName) { log("Enter a name for the merged part studio."); return; }
 
-  log(`Merging ${files.length} uploaded file(s) + ${checked.length} existing part studio(s) into "${outputName}"...`);
+  log(`Cleaning up ${files.length} uploaded file(s) + ${checked.length} existing part studio(s)...`);
 
   const form = new FormData();
   form.append("documentId", currentDoc.documentId);
   form.append("workspaceId", currentDoc.workspaceId);
-  form.append("outputName", outputName);
   form.append("deleteOriginals", deleteOriginals);
   checked.forEach((id) => form.append("elementIds", id));
   for (const f of files) form.append("files", f);
@@ -60,8 +57,8 @@ document.getElementById("mergeBtn").addEventListener("click", async () => {
     const resp = await fetch("/api/merge", { method: "POST", body: form });
     const data = await resp.json();
     (data.log || []).forEach(log);
-    if (!resp.ok) throw new Error(data.error || "Merge failed");
-    log("Success. Reload the Onshape document to see the merged tab.");
+    if (!resp.ok) throw new Error(data.error || "Cleanup failed");
+    log("Success. Reload the Onshape document and drag the clean tabs into your folder.");
   } catch (err) {
     log("ERROR: " + err.message);
   }

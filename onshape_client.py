@@ -1,13 +1,13 @@
 """
-Thin wrapper around the Onshape REST API for the specific merge workflow:
+Thin wrapper around the Onshape REST API for cleaning up messy multi-body
+McMaster STEP imports, one item at a time:
 
   1. list Part Studios in a document
-  2. create a scratch Assembly
-  3. insert each selected Part Studio's parts into that Assembly
-  4. export the Assembly as STEP
-  5. re-import that STEP, flattened, into a brand-new single Part Studio
-  6. rename the result
-  7. delete the scratch Assembly and the original single-part Part Studios
+  2. for each source item: create a scratch Assembly, insert its parts
+  3. export that Assembly as STEP
+  4. re-import as a single composite body (createComposite=true)
+  5. rename the result to match the original
+  6. delete the scratch Assembly and the original messy Part Studio
 
 Auth: Onshape API keys (access key / secret key), sent as HTTP Basic auth.
 Generate a key pair at https://dev-portal.onshape.com/keys -- this is a
@@ -172,19 +172,23 @@ class OnshapeClient:
         dl = self._request("GET", f"/api/v10/documents/d/{did}/externaldata/{ext_id}")
         return dl.content
 
-    def import_step(self, did: str, wid: str, filename: str, file_bytes: bytes) -> str:
+    def import_step(self, did: str, wid: str, filename: str, file_bytes: bytes, create_composite: bool = False) -> str:
         """Upload a STEP file into a new Part Studio.
 
-        flattenAssemblies=True matters when this is fed the export of the
-        scratch assembly (multiple bodies -> one Part Studio, one Part per
-        solid). It's harmless when fed a plain single-part McMaster STEP
-        file too, so this one method covers both call sites.
+        create_composite=False: plain import. A multi-body STEP file (e.g.
+        a McMaster item whose file contains several solids for its
+        sub-components) lands as one Part Studio with several loose Parts.
+
+        create_composite=True: fuses every body in the file into a single
+        composite Part -- this is the "make it one clean solid" step, used
+        on the export of a scratch assembly to collapse a messy multi-body
+        item into one usable part.
         """
         files = {"file": (filename, io.BytesIO(file_bytes), "application/step")}
         data = {
             "storeInDocument": "true",
             "flattenAssemblies": "true",
-            "createComposite": "false",
+            "createComposite": "true" if create_composite else "false",
             "allowFaultyParts": "true",
         }
         resp = self._request(
@@ -196,18 +200,3 @@ class OnshapeClient:
         result = self._poll_translation(resp.json()["id"])
         new_eid = result["resultElementIds"][0]
         return new_eid
-
-
-def grid_transform(index: int, spacing: float = 0.5) -> list:
-    """A simple 4x4 transform (row-major, flattened) that offsets each
-    inserted part along X so bodies don't land exactly on top of each
-    other. Purely cosmetic -- doesn't matter for a parts-library Part
-    Studio, just makes the intermediate assembly easier to look at.
-    """
-    x = index * spacing
-    return [
-        1, 0, 0, x,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1,
-    ]

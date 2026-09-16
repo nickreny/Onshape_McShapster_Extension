@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Onshape Part Studio Merger</title>
+<title>Onshape Part Studio Cleaner</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <main>
-  <h1>Onshape Part Studio Merger</h1>
-  <p class="sub">RM tool — combines several single-part Part Studios (e.g. McMaster imports) into one.</p>
+  <h1>Onshape Part Studio Cleaner</h1>
+  <p class="sub">RM tool — turns messy multi-body McMaster imports into clean single-body Part Studios.</p>
 
   <section>
     <label>Document URL</label>
@@ -19,20 +19,17 @@
   <section id="studiosSection" hidden>
     <label>McMaster STEP files (from your downloads folder)</label>
     <input id="stepFiles" type="file" accept=".step,.stp" multiple>
-    <p class="hint">Optional — drop in files you just downloaded from McMaster. They'll be imported and merged along with anything checked below.</p>
+    <p class="hint">Each file becomes its own clean, single-body Part Studio, named after the file. Nothing gets merged together across different parts.</p>
 
-    <label>Existing loose Part Studios already in this document (optional)</label>
+    <label>Existing messy multi-body Part Studios already in this document (optional)</label>
     <div id="studioList"></div>
-
-    <label>Name for the merged Part Studio</label>
-    <input id="outputName" type="text" placeholder="e.g. Hardware Kit - Bracket Assembly">
 
     <label class="checkbox-row">
       <input id="deleteOriginals" type="checkbox" checked>
-      Delete the original single-part Part Studios after a successful merge
+      Delete the original messy multi-body Part Studios after cleanup
     </label>
 
-    <button id="mergeBtn">Import &amp; Merge</button>
+    <button id="mergeBtn">Clean Up</button>
   </section>
 
   <section>

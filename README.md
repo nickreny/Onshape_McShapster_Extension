@@ -1,9 +1,11 @@
-# Onshape Part Studio Merger (RM internal tool)
+# Onshape Part Studio Cleaner (RM internal tool)
 
-Combines several single-part Part Studios in an Onshape document (e.g. one
-per McMaster-Carr import) into a single Part Studio, then cleans up after
-itself — mirroring the manual "assembly, export, re-import" workaround, but
-in one click.
+Some McMaster-Carr STEP files come in as a messy multi-body Part Studio --
+one tab, but five or more loose separate bodies representing the item's
+sub-components. This tool cleans each one up into a single, correctly-
+named, single-body Part Studio, ready to drop into an assembly or
+organize into a folder. It processes each McMaster part independently --
+nothing gets merged together across different part numbers.
 
 ## Running it via GitHub Codespaces (no local install needed)
 
@@ -68,33 +70,32 @@ No local Python, no local install, nothing on this laptop.
    should look like `.../documents/<id>/w/<id>/e/<id>`), paste it in and
    click "Load Part Studios."
 3. In the "McMaster STEP files" field, select the file(s) you just
-   downloaded. (Optional: also check any loose single-part studios already
-   sitting in the doc from a prior "Send to Onshape" import — both get
-   merged together in the same pass.)
-4. Type the name you want the merged Part Studio to end up with.
-5. Leave "delete originals" checked if you only want to keep the merged
-   result (this is the default). It deletes both the freshly-imported
-   per-file studios and any pre-existing loose studios you checked.
-6. Click "Import & Merge." The log shows each step; when it says "Done,"
-   reload the Onshape document tab list to see the new combined Part Studio.
+   downloaded. (Optional: also check any already-imported messy multi-body
+   studios sitting in the doc -- each gets cleaned up independently, same
+   as the freshly uploaded ones.)
+4. Leave "delete originals" checked if you only want to keep the cleaned
+   result for each item (this is the default).
+5. Click "Clean Up." The log shows each step per item; when it says
+   "Done," reload the Onshape document to see the results.
+6. In Onshape, drag the new clean tabs into whatever folder you want to
+   organize them under (e.g. "CAD Imports") -- Onshape doesn't expose
+   tab-folder creation/assignment to the API, so this one step stays manual.
 
 ## What it does under the hood
 
-1. Uploads each selected STEP file straight into the document as its own
-   new Part Studio (this is the same thing Onshape's own import dialog
-   does with a single file).
-2. Creates a scratch Assembly.
-3. Inserts every source Part Studio's parts into it (offset along X so
-   bodies don't sit exactly on top of each other -- this is cosmetic only,
-   since the goal is a parts library, not a positioned physical assembly).
-4. Exports that Assembly as STEP.
-5. Re-imports the STEP with `flattenAssemblies=true`, which reproduces the
-   Onshape import dialog's "combine into a single Part Studio" behavior --
-   each solid becomes its own Part inside one new Part Studio.
-6. Renames the new Part Studio to whatever you typed.
-7. Deletes the scratch Assembly, and (if left checked) every source Part
-   Studio -- both the ones just created from your uploads and any
-   pre-existing loose ones you checked.
+For each uploaded file or selected existing Part Studio, independently:
+
+1. Imports (or uses the existing) Part Studio as-is -- this is often the
+   messy multi-body tab McMaster's file produces.
+2. Creates a scratch Assembly and inserts that Part Studio's parts into it.
+3. Exports the assembly as STEP.
+4. Re-imports that STEP with `createComposite=true`, which fuses every
+   body into ONE composite Part -- turning "5 loose bodies" into "1 clean
+   solid."
+5. Renames the result to match the original file name (or the existing
+   tab's name, if it came from a pre-existing studio).
+6. Deletes the scratch assembly, and (if left checked) the original messy
+   Part Studio -- leaving only the clean single-body result.
 
 ## One thing that's still worth watching on your first real run
 
@@ -109,9 +110,10 @@ to me and it's a one-line fix.
 
 ## Scope note
 
-This automates the Onshape side, including turning your locally-downloaded
-McMaster STEP files into the merged Part Studio in one pass. It does not
-touch McMaster's website itself -- you still click "Download" there. That's
-intentional: automating McMaster's own site would mean scripting a browser
-against a page that isn't built to be scripted, which breaks silently
-whenever they change their layout and needs ongoing upkeep to keep working.
+This automates the Onshape side: turning locally-downloaded McMaster STEP
+files (or already-imported messy ones) into clean single-body Part
+Studios. It does not touch McMaster's website itself -- you still click
+"Download" there -- and it does not create or assign Onshape's tab
+folders, since that's a UI-only feature with no public API. Both of those
+stay manual, deliberately, rather than relying on fragile scraping or
+undocumented endpoints.
